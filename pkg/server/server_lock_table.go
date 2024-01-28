@@ -7,14 +7,14 @@ import (
 )
 
 type LockTable struct {
-	mu    *sync.RWMutex
+	mu    *sync.Mutex
 	locks map[string]uint64
 	ctx   context.Context
 }
 
 func NewLockTable(ctx context.Context) *LockTable {
 	return &LockTable{
-		mu:    &sync.RWMutex{},
+		mu:    &sync.Mutex{},
 		locks: map[string]uint64{},
 		ctx:   ctx,
 	}
@@ -29,7 +29,7 @@ func (t *LockTable) acquireLockWithContext(c *Client, name string, ctx context.C
 		select {
 		case <-ctx.Done():
 			return false
-		case <-time.After(time.Millisecond * 50):
+		case <-time.After(time.Millisecond):
 			break
 		}
 	}

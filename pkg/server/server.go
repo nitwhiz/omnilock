@@ -15,20 +15,32 @@ type Server struct {
 	acceptorCount int
 	listenAddr    string
 	ctx           context.Context
-	clients       *ClientList
 	cmdChan       chan *Command
 	lockTable     *LockTable
 	wg            *sync.WaitGroup
 	cmdHandlers   map[string]CommandHandler
 }
 
+func (s *Server) applyDefaults() {
+	if s.keepAlive == 0 {
+		WithKeepAlivePeriod(time.Second * 5)(s)
+	}
+
+	if s.acceptorCount == 0 {
+		WithAcceptorCount(runtime.NumCPU())(s)
+	}
+
+	if s.listenAddr == "" {
+		WithListenAddr("0.0.0.0:7194")(s)
+	}
+}
+
 func New(ctx context.Context, opts ...Option) (*Server, error) {
 	s := Server{
-		clients:       NewClientList(),
 		ctx:           ctx,
-		keepAlive:     time.Second * 5,
-		acceptorCount: runtime.NumCPU(),
-		listenAddr:    "0.0.0.0:7194",
+		keepAlive:     0,
+		acceptorCount: 0,
+		listenAddr:    "",
 		cmdChan:       make(chan *Command),
 		lockTable:     NewLockTable(ctx),
 		wg:            &sync.WaitGroup{},
@@ -38,6 +50,8 @@ func New(ctx context.Context, opts ...Option) (*Server, error) {
 	for _, withOption := range opts {
 		withOption(&s)
 	}
+
+	s.applyDefaults()
 
 	listenConfig := net.ListenConfig{
 		KeepAlive: s.keepAlive,
@@ -77,15 +91,13 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 	c := NewClient(conn, s.cmdChan)
 
-	s.clients.Add(c)
-
 	c.StartCommandLoop()
 
 	s.lockTable.UnlockAllForClient(c)
 }
 
 func (s *Server) waitForShutdown() {
-	<-time.After(time.Second)
+	<-s.ctx.Done()
 	s.wg.Wait()
 }
 
