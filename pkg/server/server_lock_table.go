@@ -87,3 +87,10 @@ func (t *LockTable) UnlockAllForClient(c *Client) {
 		}
 	}
 }
+
+func (t *LockTable) Count() int {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	return len(t.locks)
+}
