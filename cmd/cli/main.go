@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/nitwhiz/omnilock/pkg/prometheus"
+	"github.com/nitwhiz/omnilock/pkg/prom"
 	"github.com/nitwhiz/omnilock/pkg/server"
 )
 
@@ -18,7 +18,7 @@ func main() {
 	fmt.Println("Starting metrics server")
 
 	go func() {
-		if err := prometheus.Listen(s); err != nil {
+		if err := prom.Listen(s); err != nil {
 			fmt.Printf("Error: %s\n", err)
 		}
 	}()

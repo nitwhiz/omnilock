@@ -17,6 +17,7 @@ type Server struct {
 	ctx           context.Context
 	cmdChan       chan *Command
 	lockTable     *LockTable
+	clientCount   int
 	wg            *sync.WaitGroup
 	cmdHandlers   map[string]CommandHandler
 }
@@ -43,6 +44,7 @@ func New(ctx context.Context, opts ...Option) (*Server, error) {
 		listenAddr:    "",
 		cmdChan:       make(chan *Command),
 		lockTable:     NewLockTable(ctx),
+		clientCount:   0,
 		wg:            &sync.WaitGroup{},
 		cmdHandlers:   map[string]CommandHandler{},
 	}
@@ -88,6 +90,11 @@ func (s *Server) acceptor() {
 func (s *Server) handleConnection(conn net.Conn) {
 	s.wg.Add(1)
 	defer s.wg.Done()
+
+	s.clientCount += 1
+	defer func() {
+		s.clientCount -= 1
+	}()
 
 	c := NewClient(conn, s.cmdChan)
 

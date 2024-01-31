@@ -2,20 +2,18 @@ package server
 
 import (
 	"context"
-	"sync"
+	"github.com/nitwhiz/omnilock/pkg/table"
 	"time"
 )
 
 type LockTable struct {
-	mu    *sync.Mutex
-	locks map[string]uint64
+	locks *table.Table[string, uint64]
 	ctx   context.Context
 }
 
 func NewLockTable(ctx context.Context) *LockTable {
 	return &LockTable{
-		mu:    &sync.Mutex{},
-		locks: map[string]uint64{},
+		locks: table.New[string, uint64](),
 		ctx:   ctx,
 	}
 }
@@ -47,50 +45,23 @@ func (t *LockTable) LockWithTimeout(c *Client, name string, timeout time.Duratio
 }
 
 func (t *LockTable) TryLock(c *Client, name string) bool {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	if _, ok := t.locks[name]; ok {
-		return false
-	}
-
-	t.locks[name] = c.ID
-
-	return true
+	return t.locks.TryPut(name, c.ID)
 }
 
 func (t *LockTable) Unlock(c *Client, name string) bool {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	if cID, ok := t.locks[name]; ok && cID == c.ID {
-		delete(t.locks, name)
-		return true
-	}
-
-	return false
+	return t.locks.RemoveIf(name, func(v uint64) bool {
+		return c.ID == v
+	})
 }
 
 func (t *LockTable) forceUnlock(name string) {
-	if _, ok := t.locks[name]; ok {
-		delete(t.locks, name)
-	}
+	t.locks.Remove(name)
 }
 
 func (t *LockTable) UnlockAllForClient(c *Client) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	for lockName, cID := range t.locks {
-		if cID == c.ID {
-			t.forceUnlock(lockName)
-		}
-	}
+	t.locks.RemoveByValue(c.ID)
 }
 
 func (t *LockTable) Count() int {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	return len(t.locks)
+	return t.locks.Len()
 }
