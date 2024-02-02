@@ -1,18 +1,46 @@
 package server
 
-const CmdLock = "lock"
-const CmdTryLock = "trylock"
-const CmdUnlock = "unlock"
+import (
+	"github.com/nitwhiz/omnilock/pkg/client"
+	"strings"
+)
 
-type Command struct {
-	Command string
-	Client  *Client
+func (s *Server) addCommandHandler(cmdName string, handler CommandHandler) {
+	s.cmdHandlers[cmdName] = handler
 }
 
-func (c *Client) NewCommand(cmd string) *Command {
-	return &Command{
-		Command: cmd,
-		Client:  c,
+func (s *Server) initCommandHandlers() {
+	s.addCommandHandler("lock", LockHandler(s))
+	s.addCommandHandler("trylock", TryLockHandler(s))
+	s.addCommandHandler("unlock", UnlockHandler(s))
+}
+
+func (s *Server) handleCommand(cmd *client.Command) {
+	argv := strings.Split(cmd.Cmd, " ")
+
+	if len(argv) < 1 {
+		s.Write(cmd.Client, "error: missing command")
+		return
+	}
+
+	cmdHandler, ok := s.cmdHandlers[argv[0]]
+
+	if !ok {
+		s.Write(cmd.Client, "error: unknown command")
+		return
+	}
+
+	result, err := cmdHandler(cmd.Client, argv[1:]...)
+
+	if err != nil {
+		s.Write(cmd.Client, "error: "+err.Error())
+		return
+	}
+
+	if result {
+		s.Write(cmd.Client, "success")
+	} else {
+		s.Write(cmd.Client, "failed")
 	}
 }
 

@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/nitwhiz/omnilock/pkg/client"
+	"github.com/nitwhiz/omnilock/pkg/locking"
 	"net"
 	"runtime"
 	"sync"
@@ -10,15 +12,14 @@ import (
 )
 
 type Server struct {
+	wg            *sync.WaitGroup
 	keepAlive     time.Duration
+	listenAddr    string
 	listener      net.Listener
 	acceptorCount int
-	listenAddr    string
 	ctx           context.Context
-	cmdChan       chan *Command
-	lockTable     *LockTable
-	clientCount   int
-	wg            *sync.WaitGroup
+	LockTable     *locking.LockTable
+	cmdChan       chan *client.Command
 	cmdHandlers   map[string]CommandHandler
 }
 
@@ -38,15 +39,15 @@ func (s *Server) applyDefaults() {
 
 func New(ctx context.Context, opts ...Option) (*Server, error) {
 	s := Server{
-		ctx:           ctx,
-		keepAlive:     0,
-		acceptorCount: 0,
-		listenAddr:    "",
-		cmdChan:       make(chan *Command),
-		lockTable:     NewLockTable(ctx),
-		clientCount:   0,
 		wg:            &sync.WaitGroup{},
+		keepAlive:     0,
+		listenAddr:    "",
+		listener:      nil,
+		acceptorCount: 0,
+		ctx:           ctx,
+		cmdChan:       make(chan *client.Command),
 		cmdHandlers:   map[string]CommandHandler{},
+		LockTable:     locking.NewLockTable(),
 	}
 
 	for _, withOption := range opts {
@@ -91,16 +92,11 @@ func (s *Server) handleConnection(conn net.Conn) {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	s.clientCount += 1
-	defer func() {
-		s.clientCount -= 1
-	}()
+	c := client.New(s.ctx, conn, s.cmdChan)
 
-	c := NewClient(conn, s.cmdChan)
+	c.ListenForCommands()
 
-	c.StartCommandLoop()
-
-	s.lockTable.UnlockAllForClient(c)
+	s.LockTable.UnlockAllForClient(c)
 }
 
 func (s *Server) waitForShutdown() {
@@ -118,4 +114,8 @@ func (s *Server) Accept() {
 	fmt.Println("Ready!")
 
 	s.waitForShutdown()
+}
+
+func (s *Server) Write(c *client.Client, msg string) {
+	_, _ = c.Write([]byte(msg + "\n"))
 }
