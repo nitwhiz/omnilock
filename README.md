@@ -22,7 +22,7 @@ Note: All commands and responses end with `\n` (newline).
 Start the server with:
 
 ```shell
-docker run --rm -it -p 7194:7194 ghcr.io/nitwhiz/omnilock:lastest
+docker run --rm -it -p 7194:7194 ghcr.io/nitwhiz/omnilock:latest
 ```
 
 And connect to it via port 7194.
