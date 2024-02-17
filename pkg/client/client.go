@@ -3,7 +3,7 @@ package client
 import (
 	"bufio"
 	"context"
-	"github.com/nitwhiz/omnilock/pkg/id"
+	"github.com/nitwhiz/omnilock/v2/pkg/id"
 	"net"
 	"sync"
 	"time"

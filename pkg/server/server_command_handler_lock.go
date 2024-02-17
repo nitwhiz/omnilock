@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"errors"
-	"github.com/nitwhiz/omnilock/pkg/client"
+	"github.com/nitwhiz/omnilock/v2/pkg/client"
 	"log"
 	"strconv"
 	"time"

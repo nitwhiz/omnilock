@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/nitwhiz/omnilock/pkg/server"
+	"github.com/nitwhiz/omnilock/v2/pkg/server"
 	"log"
 )
 

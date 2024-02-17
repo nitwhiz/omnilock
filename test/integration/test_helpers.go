@@ -3,7 +3,7 @@ package integration
 import (
 	"context"
 	"fmt"
-	"github.com/nitwhiz/omnilock/pkg/server"
+	"github.com/nitwhiz/omnilock/v2/pkg/server"
 	"net"
 	"strings"
 	"sync"

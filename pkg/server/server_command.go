@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/nitwhiz/omnilock/pkg/client"
+	"github.com/nitwhiz/omnilock/v2/pkg/client"
 	"strings"
 )
 

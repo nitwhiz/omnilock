@@ -2,7 +2,7 @@ package lock
 
 import (
 	"context"
-	"github.com/nitwhiz/omnilock/pkg/util"
+	"github.com/nitwhiz/omnilock/v2/pkg/util"
 	"sync"
 	"time"
 )

@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"github.com/nitwhiz/omnilock/pkg/client"
-	"github.com/nitwhiz/omnilock/pkg/lock"
+	"github.com/nitwhiz/omnilock/v2/pkg/client"
+	"github.com/nitwhiz/omnilock/v2/pkg/lock"
 	"log"
 	"net"
 	"sync"

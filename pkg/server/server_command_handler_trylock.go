@@ -2,7 +2,7 @@ package server
 
 import (
 	"errors"
-	"github.com/nitwhiz/omnilock/pkg/client"
+	"github.com/nitwhiz/omnilock/v2/pkg/client"
 	"log"
 )
 
