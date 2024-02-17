@@ -16,6 +16,19 @@ func (s *Server) initCommandHandlers() {
 }
 
 func (s *Server) handleCommand(cmd *client.Command) {
+	s.wg.Add(1)
+	defer s.wg.Done()
+
+	cmd.Client.Lock()
+	defer cmd.Client.Unlock()
+
+	select {
+	case <-cmd.Client.Done():
+		return
+	default:
+		break
+	}
+
 	argv := strings.Split(cmd.Cmd, " ")
 
 	if len(argv) < 1 {
@@ -50,13 +63,12 @@ func (s *Server) startCommandListener() {
 
 	for {
 		select {
-		case c := <-s.cmdChan:
-			s.handleCommand(c)
-			break
 		case <-s.ctx.Done():
 			_ = s.listener.Close()
-
 			return
+		case c := <-s.cmdChan:
+			go s.handleCommand(c)
+			break
 		}
 	}
 }

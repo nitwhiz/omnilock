@@ -8,9 +8,12 @@ import (
 )
 
 func TestTryLock(t *testing.T) {
-	serverAddr, cancel := startServer(t)
+	wg, serverAddr, cancel := startServer(t)
 
-	defer cancel()
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
 
 	conn := connect(t, serverAddr)
 
@@ -47,9 +50,12 @@ func TestTryLock(t *testing.T) {
 }
 
 func TestTryLockAndLockoutSameConnection(t *testing.T) {
-	serverAddr, cancel := startServer(t)
+	wg, serverAddr, cancel := startServer(t)
 
-	defer cancel()
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
 
 	conn := connect(t, serverAddr)
 
@@ -115,9 +121,12 @@ func TestTryLockAndLockoutSameConnection(t *testing.T) {
 }
 
 func TestTryLockAndLockoutDifferentConnection(t *testing.T) {
-	serverAddr, cancel := startServer(t)
+	wg, serverAddr, cancel := startServer(t)
 
-	defer cancel()
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
 
 	// try 1 - success
 

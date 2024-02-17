@@ -6,6 +6,7 @@ import (
 	"github.com/nitwhiz/omnilock/pkg/server"
 	"net"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -19,7 +20,9 @@ func connect(t *testing.T, tcpServer *net.TCPAddr) *net.TCPConn {
 	return conn
 }
 
-func startServer(t *testing.T) (*net.TCPAddr, context.CancelFunc) {
+func startServer(t *testing.T) (*sync.WaitGroup, *net.TCPAddr, context.CancelFunc) {
+	wg := &sync.WaitGroup{}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	s, err := server.New(ctx, server.WithListenAddr("localhost:3000"))
@@ -28,11 +31,16 @@ func startServer(t *testing.T) (*net.TCPAddr, context.CancelFunc) {
 		t.Fatal(err)
 	}
 
-	go s.Accept()
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+
+		s.Run()
+	}()
 
 	tcpServer, err := net.ResolveTCPAddr("tcp", "localhost:3000")
 
-	return tcpServer, cancel
+	return wg, tcpServer, cancel
 }
 
 func escapeString(input string) string {
