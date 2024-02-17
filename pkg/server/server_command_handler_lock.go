@@ -1,8 +1,10 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"github.com/nitwhiz/omnilock/pkg/client"
+	"log"
 	"strconv"
 	"time"
 )
@@ -30,11 +32,18 @@ func LockHandler(s *Server) CommandHandler {
 			timeout = time.Millisecond * time.Duration(timeoutInt)
 		}
 
+		result = false
+
 		if timeout == 0 {
-			result = s.LockTable.Lock(c, lockName)
+			result = s.locks.Lock(s.ctx, lockName, c.GetID())
 		} else {
-			result = s.LockTable.LockWithTimeout(c, lockName, timeout)
+			ctx, cancel := context.WithTimeout(s.ctx, timeout)
+			defer cancel()
+
+			result = s.locks.Lock(ctx, lockName, c.GetID())
 		}
+
+		log.Printf("Client #%d requested lock '%s': %v.\n", c.GetID(), lockName, result)
 
 		return result, nil
 	}

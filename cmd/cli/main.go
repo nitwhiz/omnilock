@@ -2,17 +2,17 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/nitwhiz/omnilock/pkg/server"
+	"log"
 )
 
 func main() {
 	s, err := server.New(context.Background())
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
-	s.Accept()
+	s.Run()
 }

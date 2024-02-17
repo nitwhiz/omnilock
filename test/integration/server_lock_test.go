@@ -3,14 +3,18 @@ package integration
 import (
 	"bufio"
 	"net"
+	"sync"
 	"testing"
 	"time"
 )
 
 func TestLock(t *testing.T) {
-	serverAddr, cancel := startServer(t)
+	wg, serverAddr, cancel := startServer(t)
 
-	defer cancel()
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
 
 	conn := connect(t, serverAddr)
 
@@ -47,9 +51,12 @@ func TestLock(t *testing.T) {
 }
 
 func TestLockWithTimeoutAndLockoutSameConnection(t *testing.T) {
-	serverAddr, cancel := startServer(t)
+	wg, serverAddr, cancel := startServer(t)
 
-	defer cancel()
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
 
 	conn := connect(t, serverAddr)
 
@@ -115,9 +122,12 @@ func TestLockWithTimeoutAndLockoutSameConnection(t *testing.T) {
 }
 
 func TestLockWithTimeoutAndLockoutDifferentConnection(t *testing.T) {
-	serverAddr, cancel := startServer(t)
+	wg, serverAddr, cancel := startServer(t)
 
-	defer cancel()
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
 
 	// try 1 - success
 
@@ -188,4 +198,91 @@ func TestLockWithTimeoutAndLockoutDifferentConnection(t *testing.T) {
 	if recvEscaped != expected {
 		t.Fatalf("response mismatch, expected \"%s\", got \"%s\"", expected, recvEscaped)
 	}
+}
+
+func TestLockWithTimeoutAndConcurrency(t *testing.T) {
+	wg, serverAddr, cancel := startServer(t)
+
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
+
+	wg2 := &sync.WaitGroup{}
+
+	go func() {
+		wg2.Add(1)
+
+		conn1 := connect(t, serverAddr)
+
+		defer func(conn *net.TCPConn) {
+			_ = conn.Close()
+			wg2.Done()
+		}(conn1)
+
+		_, err := conn1.Write([]byte("lock test1\n"))
+
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		r1 := bufio.NewReader(conn1)
+
+		recv, err := r1.ReadString('\n')
+
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		recvEscaped := escapeString(recv)
+		expected := "success\\x0A"
+
+		if recvEscaped != expected {
+			t.Errorf("response mismatch, expected \"%s\", got \"%s\"", expected, recvEscaped)
+			return
+		}
+
+		time.Sleep(time.Millisecond * 250)
+	}()
+
+	go func() {
+		wg2.Add(1)
+
+		conn1 := connect(t, serverAddr)
+
+		defer func(conn *net.TCPConn) {
+			_ = conn.Close()
+			wg2.Done()
+		}(conn1)
+
+		_, err := conn1.Write([]byte("lock test1 500\n"))
+
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		r1 := bufio.NewReader(conn1)
+
+		recv, err := r1.ReadString('\n')
+
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		recvEscaped := escapeString(recv)
+		expected := "success\\x0A"
+
+		if recvEscaped != expected {
+			t.Errorf("response mismatch, expected \"%s\", got \"%s\"", expected, recvEscaped)
+			return
+		}
+	}()
+
+	time.Sleep(time.Millisecond)
+
+	wg2.Wait()
 }
