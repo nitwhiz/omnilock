@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"sync"
-	"time"
 )
 
 type Server struct {
@@ -54,7 +53,6 @@ func New(ctx context.Context, opts ...Option) (*Server, error) {
 }
 
 func (s *Server) acceptor() {
-	s.wg.Add(1)
 	defer s.wg.Done()
 
 	for {
@@ -104,15 +102,16 @@ func (s *Server) wait() {
 }
 
 func (s *Server) Run() {
+	s.wg.Add(1)
+
 	go s.startCommandListener()
 
 	for i := 0; i < s.options.acceptorCount; i++ {
+		s.wg.Add(1)
 		go s.acceptor()
 	}
 
 	log.Println("Ready to serve connections")
-
-	<-time.After(time.Millisecond)
 
 	s.wait()
 }

@@ -210,9 +210,9 @@ func TestLockWithTimeoutAndConcurrency(t *testing.T) {
 
 	wg2 := &sync.WaitGroup{}
 
-	go func() {
-		wg2.Add(1)
+	wg2.Add(1)
 
+	go func() {
 		conn1 := connect(t, serverAddr)
 
 		defer func(conn *net.TCPConn) {
@@ -247,9 +247,9 @@ func TestLockWithTimeoutAndConcurrency(t *testing.T) {
 		time.Sleep(time.Millisecond * 250)
 	}()
 
-	go func() {
-		wg2.Add(1)
+	wg2.Add(1)
 
+	go func() {
 		conn1 := connect(t, serverAddr)
 
 		defer func(conn *net.TCPConn) {
@@ -281,8 +281,6 @@ func TestLockWithTimeoutAndConcurrency(t *testing.T) {
 			return
 		}
 	}()
-
-	time.Sleep(time.Millisecond)
 
 	wg2.Wait()
 }

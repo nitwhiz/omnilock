@@ -29,13 +29,11 @@ func (t *Table) Lock(ctx context.Context, name string, clientId uint64) bool {
 	result := false
 
 	wg := &sync.WaitGroup{}
-	isRunning := false
+
+	wg.Add(1)
 
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
-
-		isRunning = true
 
 		for {
 			select {
@@ -51,10 +49,6 @@ func (t *Table) Lock(ctx context.Context, name string, clientId uint64) bool {
 			}
 		}
 	}()
-
-	for !isRunning {
-		<-time.After(time.Millisecond)
-	}
 
 	wg.Wait()
 

@@ -58,7 +58,6 @@ func (s *Server) handleCommand(cmd *client.Command) {
 }
 
 func (s *Server) startCommandListener() {
-	s.wg.Add(1)
 	defer s.wg.Done()
 
 	for {
